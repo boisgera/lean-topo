@@ -6,8 +6,6 @@ import Mathlib.Topology.UnitInterval
 
 open unitInterval -- provides I
 
-#check C(I, ℝ)
-
 variable (A B : Set ℂ)
 
 -- I don't like the standard mathlib IsPathConnected definition:
@@ -20,15 +18,50 @@ def IsPathConnected' (F : Set ℂ) :=
 
 namespace Calculus
 
+lemma is_unit_two : IsUnit (2 : ℝ) := IsUnit.mk0 2 (by norm_num)
+lemma two_sub_one : (2 : ℝ) - 1 = 1 := by norm_num
+
 -- Rk: we could also get rid of the first assumption here.
 lemma lemma₁ (x : ℝ) (h₁ : 0 <= x) (h₂ : x ≤ 1/2) : 2 * x ≤ 1 := by
   have two_le_two : (2 : ℝ) ≤ 2 := le_refl 2
   have two_geq_zero : (2 : ℝ) ≥ 0 := zero_le_two
-  have is_unit_two : IsUnit (2 : ℝ) := IsUnit.mk0 2 (by norm_num)
   have : 2 * x ≤ 2 * (1 / 2 : ℝ) := mul_le_mul two_le_two h₂ h₁ zero_le_two
   simp only [one_div] at this
   rw [IsUnit.mul_inv_cancel is_unit_two] at this
   assumption
+
+lemma lemma₁' {x : ℝ} (h₁ : 0 <= x) (h₂ : x <= 1 / 2) : (2 * x ∈ I) := by
+  constructor
+  . linarith
+  . linarith
+
+lemma mul_le_mul' : ∀ {a b c : ℝ}, a ≤ b → 0 ≤ c → c * a <= c * b := by
+  intro a b c a_le_b c_nonneg
+  exact mul_le_mul_of_nonneg_left a_le_b c_nonneg
+
+-- TODO: rewrite this with linarith more extensively?
+lemma lemma₂ (x : ℝ) (h₁ : 1/2 <= x) (h₂ : x ≤ 1): 2 * x - 1 ∈ I := by
+  rw [Set.mem_Icc]
+  constructor
+  . have h₃ : 2 * (1/2) <= 2 * x :=
+      mul_le_mul (by norm_num) h₁ (by norm_num) (by norm_num)
+    simp only [one_div] at h₃
+    simp only [IsUnit.mul_inv_cancel is_unit_two] at h₃
+    have h₄ : 1 - 1 <= 2 * x - 1:= sub_le_sub h₃ (by norm_num)
+    simp only [sub_self] at h₄
+    assumption
+  . have : 2 * x <= 2 * 1 := mul_le_mul' h₂ (by norm_num)
+    simp only [mul_one] at this
+    have h : 2 * x - 1 <= 2 - 1 := sub_le_sub this (by norm_num)
+    linarith
+    -- simp only [two_sub_one] at this
+    -- assumption
+
+lemma lemma₂' {x : ℝ} (h₁ : 1/2 <= x) (h₂ : x ≤ 1) : 2 * x - 1 ∈ I := by
+  constructor
+  . linarith
+  . linarith
+
 
 end Calculus
 
