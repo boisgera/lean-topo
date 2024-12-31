@@ -124,22 +124,37 @@ def separates (f : ℂ → ℝ) (A B : Set ℂ): Prop :=
 
 def zero_function (_ : I) := (0 : ℝ)
 
+lemma empty_set_is_open : IsOpen (∅ : Set I) := by
+  have empty_eq_union_empty : ∅ = (⋃₀ ∅ : Set I) := by
+    simp only [Set.sUnion_empty]
+  have h : ∀ t ∈ (∅: Set (Set I)), IsOpen t := by
+    intro t t_in_empty
+    exfalso
+    exact Set.not_mem_empty t t_in_empty
+  have := isOpen_sUnion h
+  simp only [Set.sUnion_empty] at this
+  assumption
+
 def zero_function_continuous : Continuous zero_function :=
   have isOpen_preimage: ∀ (O : Set ℝ), IsOpen O → IsOpen (zero_function⁻¹' O) := by
     intro O is_open_O
     let O' := zero_function⁻¹' O
-    have two_cases: O' = ∅ ∨ O' = {0} := by
-      match O.eq_empty_or_nonempty with
-      | Or.inl o_empty =>
-          apply Or.inl
-          simp only [O', zero_function, o_empty, Set.preimage]
-          simp only [Set.mem_empty_iff_false, Set.setOf_false]
-      | Or.inr o_prime_non_empty =>
-          apply Or.inr
-          sorry -- TODO!
-    sorry
+    cases (em (O'.Nonempty)) with
+    | inl O'_non_empty =>
+      have ⟨t, zero_in_O'⟩ := O'_non_empty
+      have : zero_function⁻¹' {0} = Set.univ := by
+        simp_all
+        intro x y
+        simp only [zero_function, Set.mem_preimage, Set.mem_singleton_iff]
+        intro _
+        exact Eq.symm
+    | inr O'_empty =>
+      push_neg at O'_empty
+      have := empty_set_is_open
+      simp only [O'] at O'_empty
+      rw [O'_empty]
+      assumption
   {isOpen_preimage := isOpen_preimage}
-
 
 theorem PathDisconnected_of_continuous_separation :
   ∀ (f : ℂ → ℝ), (Continuous f) -> (separates f A B) -> A.Nonempty -> B.Nonempty
