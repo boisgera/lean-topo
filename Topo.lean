@@ -148,6 +148,8 @@ def zero_function_continuous : Continuous zero_function :=
         simp only [zero_function, Set.mem_preimage, Set.mem_singleton_iff]
         intro _
         exact Eq.symm
+      -- TODO: missing stuff here : O' is the full space, thus open.
+      sorry
     | inr O'_empty =>
       push_neg at O'_empty
       have := empty_set_is_open
@@ -172,7 +174,10 @@ theorem PathDisconnected_of_continuous_separation :
     is_path_connected_A_union_B a a_in_A_or_B b b_in_A_or_B
   simp only [JoinedIn] at j
   have ⟨γ, γ_in_A_or_B⟩ := j
-  let ϕ := f ∘ γ
-  have ϕ_cont := Continuous.comp f_cont γ.continuous
-  have : intermediate_value_Icc (zero_le_one) ϕ_cont
+  let ϕ := f ∘ γ.extend
+  have ϕ_cont := Continuous.comp f_cont γ.continuous_extend
+  have iv := intermediate_value_Icc (zero_le_one) (Continuous.continuousOn (s := Set.Icc 0 1) ϕ_cont)
+  -- Set.Icc ((f ∘ γ.extend) 0) ((f ∘ γ.extend) 1) ⊆ f ∘ γ.extend '' Set.Icc 0 1
+  -- TODO: \exists t ∈ Set.Icc 0 1, (f ∘ γ.extend) t = 0
+  -- TODO: exhibit the contradiction (γ is a path of A ∪ B and f separates A and B)
   sorry
