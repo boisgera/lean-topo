@@ -139,21 +139,26 @@ def zero_function_continuous : Continuous zero_function :=
   have isOpen_preimage: ∀ (O : Set ℝ), IsOpen O → IsOpen (zero_function⁻¹' O) := by
     intro O is_open_O
     let O' := zero_function⁻¹' O
+    have O'_def : O' = zero_function⁻¹' O := by rfl
+    rw [<-O'_def]
     cases (em (O'.Nonempty)) with
     | inl O'_non_empty =>
       have ⟨t, zero_in_O'⟩ := O'_non_empty
-      have : zero_function⁻¹' {0} = Set.univ := by
-        simp_all
-        intro x y
-        simp only [zero_function, Set.mem_preimage, Set.mem_singleton_iff]
-        intro _
-        exact Eq.symm
-      -- TODO: missing stuff here : O' is the full space, thus open.
-      sorry
+      have O_prime_eq_univ: O' = Set.univ := by
+        let ⟨x₀, x₀_in_O'⟩ := O'_non_empty
+        simp only [O'] at x₀_in_O'
+        simp only [zero_function, Set.mem_preimage] at x₀_in_O'
+        simp only [O']
+        ext x
+        simp only [Set.mem_preimage, Set.mem_univ, iff_true]
+        rw [zero_function]
+        assumption
+      have := isOpen_univ (X := Set I)
+      rw [O_prime_eq_univ]
+      exact isOpen_univ
     | inr O'_empty =>
       push_neg at O'_empty
       have := empty_set_is_open
-      simp only [O'] at O'_empty
       rw [O'_empty]
       assumption
   {isOpen_preimage := isOpen_preimage}
