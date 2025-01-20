@@ -16,12 +16,11 @@ variable (A B : Set ℂ)
 -- is asymmetrical, entails that F.Nonempty and y is implicit.
 --
 -- A more classical definition would be:
-def IsPathConnected' (F : Set ℂ) :=
-  ∀ x ∈ F, ∀ y ∈ F, JoinedIn F x y
+def IsPathConnected' (F : Set ℂ) := ∀ x ∈ F, ∀ y ∈ F, JoinedIn F x y
 
 namespace Calculus
 
-lemma lemma₁ {x : ℝ} (h₁ : 0 <= x) (h₂ : x <= 1 / 2) : (2 * x ∈ I) := by
+lemma lemma₁ {x : ℝ} (h₁ : 0 <= x) (h₂ : x <= 1 / 2) : 2 * x ∈ I := by
   constructor
   . linarith
   . linarith
@@ -115,9 +114,6 @@ theorem pc_union : IsPathConnected' A ∧ IsPathConnected' B ∧ (A ∩ B).Nonem
           have : JoinedIn B x y := is_pc_B x x_in_B y y_in_B
           exact JoinedIn.mono this B_sub_A_union_B
 
-def separates (f : ℂ → ℝ) (A B : Set ℂ): Prop :=
-  (∀ z ∈ A, f z < 0) ∧ (∀ z ∈ B, f z > 0)
-
 
 #check intermediate_value_Icc
 #check intermediate_value_univ₂
@@ -163,10 +159,14 @@ def zero_function_continuous : Continuous zero_function :=
       assumption
   {isOpen_preimage := isOpen_preimage}
 
-theorem PathDisconnected_of_continuous_separation :
+def separates (f : ℂ → ℝ) (A B : Set ℂ): Prop :=
+  (∀ z ∈ A, f z < 0) ∧ (∀ z ∈ B, f z > 0)
+
+theorem path_disconnected_of_continuous_separation:
   ∀ (f : ℂ → ℝ), (Continuous f) -> (separates f A B) -> A.Nonempty -> B.Nonempty
   -> ¬IsPathConnected' (A ∪ B) := by
   intro f f_cont f_separates_A_B A_nonempty B_nonempty
+  have ⟨f_A_neg, f_B_pos⟩ := f_separates_A_B
   intro is_path_connected_A_union_B
   have ⟨a, a_in_A⟩ := A_nonempty
   have ⟨b, b_in_B⟩ := B_nonempty
@@ -175,14 +175,60 @@ theorem PathDisconnected_of_continuous_separation :
     Set.subset_union_left a_in_A
   have b_in_A_or_B : b ∈ A ∪ B :=
     Set.subset_union_right b_in_B
-  have j : JoinedIn (A ∪ B) a b :=
+  have ⟨γ, γ_in_A_or_B⟩ : JoinedIn (A ∪ B) a b :=
     is_path_connected_A_union_B a a_in_A_or_B b b_in_A_or_B
-  simp only [JoinedIn] at j
-  have ⟨γ, γ_in_A_or_B⟩ := j
-  let ϕ := f ∘ γ.extend
+  set ϕ := f ∘ γ.extend with ϕ_def
   have ϕ_cont := Continuous.comp f_cont γ.continuous_extend
-  have iv := intermediate_value_Icc (zero_le_one) (Continuous.continuousOn (s := Set.Icc 0 1) ϕ_cont)
-  -- Set.Icc ((f ∘ γ.extend) 0) ((f ∘ γ.extend) 1) ⊆ f ∘ γ.extend '' Set.Icc 0 1
-  -- TODO: \exists t ∈ Set.Icc 0 1, (f ∘ γ.extend) t = 0
-  -- TODO: exhibit the contradiction (γ is a path of A ∪ B and f separates A and B)
-  sorry
+  have iv : Set.Icc (ϕ 0) (ϕ 1) ⊆ ϕ '' Set.Icc 0 1 :=
+    intermediate_value_Icc (zero_le_one) (Continuous.continuousOn (s := I) ϕ_cont)
+  have begin_neg: ϕ 0 < 0 := by
+    rw [ϕ_def, Function.comp]
+    apply f_A_neg
+    simp only [
+      Set.mem_Icc,
+      le_refl,
+      zero_le_one,
+      and_self,
+      Path.extend_extends,
+      Set.Icc.mk_zero,
+      Path.source
+    ]
+    assumption
+  have end_pos: ϕ 1 > 0 := by
+    rw [ϕ_def, Function.comp]
+    apply f_B_pos
+    simp only [
+      Set.mem_Icc,
+      zero_le_one,
+      le_refl,
+      and_self,
+      Path.extend_extends,
+      Set.Icc.mk_one,
+      Path.target
+    ]
+    assumption
+  have zero_in_range : 0 ∈ Set.Icc (ϕ 0) (ϕ 1) := by
+    simp only [Set.mem_Icc]
+    constructor
+    . exact (le_of_lt begin_neg)
+    . exact (le_of_lt end_pos)
+  have zero_in_image_ϕ : 0 ∈ ϕ '' Set.Icc 0 1 := iv zero_in_range
+  have ⟨t, t_in_I, ϕ_t_eq_0⟩ := zero_in_image_ϕ
+  have γ_in_A_or_B_t := γ_in_A_or_B ⟨t, t_in_I⟩
+  have ϕ_t_neg_or_pos : (ϕ t < 0) ∨ (ϕ t > 0) := by
+    cases γ_in_A_or_B_t with
+    | inl γ_in_A_t => -- γ ⟨t, t_in_I⟩ ∈ A; prove ϕ t < 0
+        apply Or.inl
+        rw [ϕ_def]
+        apply f_A_neg
+        rw [Path.extend_extends]
+        assumption
+    | inr γ_in_B_t =>  -- γ ⟨t, t_in_I⟩ ∈ B; prove ϕ t > 0
+        apply Or.inr
+        rw [ϕ_def]
+        apply f_B_pos
+        rw [Path.extend_extends]
+        assumption
+  cases ϕ_t_neg_or_pos with
+  | inl ϕ_t_neg => rw [ϕ_t_eq_0] at ϕ_t_neg; linarith
+  | inr ϕ_t_pos => rw [ϕ_t_eq_0] at ϕ_t_pos; linarith
