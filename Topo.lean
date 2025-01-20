@@ -114,6 +114,53 @@ theorem pc_union : IsPathConnected' A ∧ IsPathConnected' B ∧ (A ∩ B).Nonem
           have : JoinedIn B x y := is_pc_B x x_in_B y y_in_B
           exact JoinedIn.mono this B_sub_A_union_B
 
+def IsConnected' (F : Set ℂ) := IsPreconnected F
+
+lemma not_empty_iff_nonempty {F : Set ℂ} : F.Nonempty ↔ ¬F = ∅ := by
+  constructor
+  . intro F_nonempty
+    intro F_empty
+    have ⟨x, x_in_F⟩ := F_nonempty
+    rw [F_empty] at x_in_F
+    exact x_in_F
+  . intro F_not_empty
+    by_contra F_empty
+    push_neg at F_empty
+    exact F_not_empty F_empty
+
+
+theorem connected_of_path_connected (F : Set ℂ) : IsPathConnected' F → IsConnected' F := by
+  intro is_path_connected
+  rw [IsConnected', IsPreconnected]
+  intro u v is_open_u is_open_v F_sub_u_v F_inter_v_non_empty F_inter_u_non_empty
+  -- We introduce a path γ that joins a ∈ u and b ∈ v in u ∪ v ;
+  -- use it to get γ.extend u' and γ.extend v' open sets of ℝ and leverage the
+  -- fact that ℝ is preconnected to deduce that γ.extend u' ∩ γ.extend v' ≠ ∅ ;
+  -- that provides a contradiction since γ.extend u' ∩ γ.extend v' = γ.extend (u ∩ v)
+  have ⟨a, a_in_F_and_u⟩ := F_inter_u_non_empty
+  have ⟨b, b_in_F_and_v⟩ := F_inter_v_non_empty
+  have ⟨γ, γ_in_F⟩ := is_path_connected a a_in_F_and_u.left b b_in_F_and_v.left
+  have γ_extend_cont := γ.continuous_extend
+
+  have is_connected_ℝ : IsPreconnected (Set.univ : Set ℝ) := by
+    sorry
+  rw [IsPreconnected] at is_connected_ℝ
+  simp only [Set.univ_inter] at is_connected_ℝ
+
+  have is_open_u' := is_open_u.preimage γ_extend_cont
+  have is_open_v' := is_open_v.preimage γ_extend_cont
+  set u' := γ.extend⁻¹' u with u'_def
+  set v' := γ.extend⁻¹' v with v'_def
+  have h₁ : Set.univ ⊆ u' ∪ v' := sorry
+  have h₂ : u'.Nonempty := sorry
+  have h₃ : v'.Nonempty := sorry
+  have h₄ := is_connected_ℝ u' v' is_open_u' is_open_v' h₁ h₂ h₃
+
+  rw [u'_def, v'_def] at h₄
+  rw [<-Set.preimage_inter] at h₄
+  -- at this stage, we only need to go from h₄ : (γ.extend ⁻¹' (u ∩ v)).Nonempty
+  -- to ⊢ (F ∩ (u ∩ v)).Nonempty
+  sorry
 
 #check intermediate_value_Icc
 #check intermediate_value_univ₂
